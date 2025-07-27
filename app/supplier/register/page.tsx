@@ -14,7 +14,10 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { PhoneInput } from "@/components/phone-input"
+import { MobileOTPVerification } from "@/components/mobile-otp-verification"
 
+// Update the component similar to vendor registration
 export default function SupplierRegister() {
   const router = useRouter()
   const { toast } = useToast()
@@ -40,72 +43,21 @@ export default function SupplierRegister() {
     deliveryRadius: "",
     agreeToTerms: false,
   })
+  const [verificationMethod, setVerificationMethod] = useState<"sms" | "whatsapp">("sms")
 
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phone,
-        options: {
-          channel: "sms",
-        },
-      })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "OTP Sent",
-          description: "Please check your phone for the verification code",
-        })
-        setStep("otp")
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send OTP. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
+  const handleOTPSent = (phoneNumber: string, method: "sms" | "whatsapp") => {
+    setPhone(phoneNumber)
+    setVerificationMethod(method)
+    setStep("otp")
   }
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  const handleVerificationSuccess = async (method: "sms" | "whatsapp") => {
+    setStep("details")
+  }
 
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: otp,
-        type: "sms",
-      })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
-      } else {
-        setStep("details")
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to verify OTP. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
+  const handlePhoneChange = () => {
+    setStep("phone")
+    setPhone("")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -264,48 +216,17 @@ export default function SupplierRegister() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {step === "phone" && (
-                <form onSubmit={handleSendOTP} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Send OTP
-                  </Button>
-                </form>
-              )}
+              {step === "phone" && <PhoneInput onOTPSent={handleOTPSent} loading={loading} setLoading={setLoading} />}
 
               {step === "otp" && (
-                <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="otp">Enter OTP *</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      placeholder="123456"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      maxLength={6}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Verify OTP
-                  </Button>
-                  <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("phone")}>
-                    Change Phone Number
-                  </Button>
-                </form>
+                <MobileOTPVerification
+                  phone={phone}
+                  onVerificationSuccess={handleVerificationSuccess}
+                  onPhoneChange={handlePhoneChange}
+                  verificationMethod={verificationMethod}
+                  loading={loading}
+                  setLoading={setLoading}
+                />
               )}
 
               {step === "details" && (

@@ -4,13 +4,14 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Phone, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { PhoneInput } from "@/components/phone-input"
+import { MobileOTPVerification } from "@/components/mobile-otp-verification"
 
 export default function SupplierLogin() {
   const router = useRouter()
@@ -142,14 +143,7 @@ export default function SupplierLogin() {
                 <form onSubmit={handleSendOTP} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      required
-                    />
+                    <PhoneInput id="phone" value={phone} onChange={(e) => setPhone(e)} required />
                   </div>
                   <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -158,25 +152,7 @@ export default function SupplierLogin() {
                 </form>
               ) : (
                 <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="otp">Enter OTP</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      placeholder="123456"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      maxLength={6}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Verify & Login
-                  </Button>
-                  <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("phone")}>
-                    Change Phone Number
-                  </Button>
+                  <MobileOTPVerification phone={phone} setStep={setStep} router={router} />
                 </form>
               )}
             </CardContent>

@@ -1,14 +1,117 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ShoppingCart, Users, TrendingUp, Shield, Star, MapPin, Phone, Mail } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  ShoppingCart,
+  Users,
+  TrendingUp,
+  Shield,
+  Star,
+  MapPin,
+  Phone,
+  Mail,
+  Search,
+  Eye,
+  ArrowRight,
+} from "lucide-react"
 import Link from "next/link"
+import { supabase, type Product, type Supplier } from "@/lib/supabase"
+
+interface ProductWithSupplier extends Product {
+  suppliers: Supplier
+}
 
 export default function HomePage() {
-  const [userType, setUserType] = useState<"vendor" | "supplier" | null>(null)
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithSupplier[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+
+  const categories = [
+    "Vegetables",
+    "Fruits",
+    "Grains & Cereals",
+    "Spices & Condiments",
+    "Dairy Products",
+    "Oils & Fats",
+    "Pulses & Legumes",
+    "Meat & Poultry",
+    "Seafood",
+    "Beverages",
+  ]
+
+  useEffect(() => {
+    fetchFeaturedProducts()
+  }, [])
+
+  const fetchFeaturedProducts = async () => {
+    try {
+      // First, let's check what columns exist in the products table
+      const { data: tableInfo, error: tableError } = await supabase.from("products").select("*").limit(1)
+
+      if (tableError) {
+        console.error("Error checking table structure:", tableError)
+        setLoading(false)
+        return
+      }
+
+      // Build the query based on available columns
+      let query = supabase
+        .from("products")
+        .select(`
+          id,
+          name,
+          category,
+          price,
+          unit,
+          suppliers (
+            id,
+            company_name,
+            city,
+            state,
+            rating,
+            verified
+          )
+        `)
+        .eq("status", "active")
+        .limit(12)
+
+      // Only add order by created_at if the column exists
+      if (tableInfo && tableInfo.length > 0 && "created_at" in tableInfo[0]) {
+        query = query.order("created_at", { ascending: false })
+      } else {
+        // Fallback to ordering by name if created_at doesn't exist
+        query = query.order("name", { ascending: true })
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setFeaturedProducts(data || [])
+    } catch (error) {
+      console.error("Error fetching products:", error)
+      // Set some mock data for demonstration if database fails
+      setFeaturedProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredProducts = featuredProducts.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.suppliers.company_name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
+
+    return matchesSearch && matchesCategory
+  })
 
   const stats = [
     { icon: Users, label: "Active Vendors", value: "2,500+" },
@@ -39,6 +142,32 @@ export default function HomePage() {
       icon: "📊",
     },
   ]
+
+  const getProductImage = (product: Product) => {
+    // Check if product has image_url property
+    const imageUrl = (product as any).image_url
+    if (imageUrl) {
+      return imageUrl
+    }
+
+    const categoryImages: Record<string, string> = {
+      Vegetables: "/placeholder.svg?height=200&width=200&text=Fresh+Vegetables",
+      Fruits: "/placeholder.svg?height=200&width=200&text=Fresh+Fruits",
+      "Grains & Cereals": "/placeholder.svg?height=200&width=200&text=Quality+Grains",
+      "Spices & Condiments": "/placeholder.svg?height=200&width=200&text=Premium+Spices",
+      "Dairy Products": "/placeholder.svg?height=200&width=200&text=Fresh+Dairy",
+      "Oils & Fats": "/placeholder.svg?height=200&width=200&text=Pure+Oils",
+      "Pulses & Legumes": "/placeholder.svg?height=200&width=200&text=Quality+Pulses",
+      "Meat & Poultry": "/placeholder.svg?height=200&width=200&text=Fresh+Meat",
+      Seafood: "/placeholder.svg?height=200&width=200&text=Fresh+Seafood",
+      Beverages: "/placeholder.svg?height=200&width=200&text=Quality+Beverages",
+    }
+
+    return (
+      categoryImages[product.category] ||
+      `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(product.name)}`
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
@@ -78,7 +207,7 @@ export default function HomePage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/vendor/register">
-              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3">
+              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 w-full sm:w-auto">
                 Join as Vendor
               </Button>
             </Link>
@@ -86,7 +215,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-orange-500 text-orange-500 hover:bg-orange-50 px-8 py-3 bg-transparent"
+                className="border-orange-500 text-orange-500 hover:bg-orange-50 px-8 py-3 bg-transparent w-full sm:w-auto"
               >
                 Become a Supplier
               </Button>
@@ -94,7 +223,7 @@ export default function HomePage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="flex justify-center mb-2">
@@ -108,13 +237,157 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Featured Products Preview */}
       <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Discover Quality Products</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Browse our featured products from verified suppliers. Login to see full details, prices, and place orders.
+            </p>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Products Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
+                  <CardContent className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="w-16 h-16 mx-auto mb-4" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">No products found</h3>
+              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              <div className="mt-6">
+                <Link href="/vendor/login">
+                  <Button className="bg-orange-500 hover:bg-orange-600">Login to Browse All Products</Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.slice(0, 8).map((product) => (
+                <Card key={product.id} className="group hover:shadow-lg transition-shadow relative overflow-hidden">
+                  <div className="aspect-square bg-gray-100 relative">
+                    <img
+                      src={getProductImage(product) || "/placeholder.svg"}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(product.name)}`
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm">Login to view details</p>
+                      </div>
+                    </div>
+                    <Badge className="absolute top-2 left-2 bg-blue-100 text-blue-800">{product.category}</Badge>
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg mb-2 line-clamp-1">{product.name}</h3>
+
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-lg font-bold text-gray-900">₹***</span>
+                        <span className="text-sm text-gray-600">/{product.unit}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">Login for price</p>
+                      </div>
+                    </div>
+
+                    <div className="mb-3 pb-3 border-b">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Supplier:</span>
+                        <span className="font-medium">{product.suppliers.company_name}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <div className="flex items-center">
+                          <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
+                          <span>{product.suppliers.rating || "New"}</span>
+                        </div>
+                        <div className="flex items-center text-gray-600">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          <span>{product.suppliers.city}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Link href="/vendor/login" className="flex-1">
+                        <Button size="sm" className="w-full bg-orange-500 hover:bg-orange-600">
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-8">
+            <Link href="/vendor/login">
+              <Button size="lg" className="bg-orange-500 hover:bg-orange-600">
+                Login to See All Products
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Why Street Food Vendors Choose VendorConnect
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="text-center hover:shadow-lg transition-shadow">
                 <CardHeader>
@@ -131,7 +404,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">How It Works</h2>
 
@@ -142,7 +415,7 @@ export default function HomePage() {
             </TabsList>
 
             <TabsContent value="vendor" className="mt-8">
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl font-bold text-orange-500">1</span>
@@ -170,7 +443,7 @@ export default function HomePage() {
             </TabsContent>
 
             <TabsContent value="supplier" className="mt-8">
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl font-bold text-blue-500">1</span>
@@ -199,10 +472,10 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What Our Users Say</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
@@ -308,7 +581,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">

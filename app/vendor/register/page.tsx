@@ -14,14 +14,17 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { PhoneInput } from "@/components/phone-input"
+import { MobileOTPVerification } from "@/components/mobile-otp-verification"
 
+// Update the component to use the new mobile OTP system
 export default function VendorRegister() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<"phone" | "otp" | "details">("phone")
   const [phone, setPhone] = useState("")
-  const [otp, setOtp] = useState("")
+  const [verificationMethod, setVerificationMethod] = useState<"sms" | "whatsapp">("sms")
   const [formData, setFormData] = useState({
     businessName: "",
     ownerName: "",
@@ -36,71 +39,26 @@ export default function VendorRegister() {
     agreeToTerms: false,
   })
 
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  const handleOTPSent = (phoneNumber: string, method: "sms" | "whatsapp") => {
+    setPhone(phoneNumber)
+    setVerificationMethod(method)
+    setStep("otp")
+  }
 
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phone,
-        options: {
-          channel: "sms",
-        },
-      })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "OTP Sent",
-          description: "Please check your phone for the verification code",
-        })
-        setStep("otp")
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send OTP. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+  const handleVerificationSuccess = async (method: "sms" | "whatsapp") => {
+    if (method === "sms") {
+      // Supabase auth handles the session automatically
+      setStep("details")
+    } else {
+      // For WhatsApp, we need to create a session manually
+      // In production, you'd want to implement proper session management
+      setStep("details")
     }
   }
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: otp,
-        type: "sms",
-      })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
-      } else {
-        setStep("details")
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to verify OTP. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
+  const handlePhoneChange = () => {
+    setStep("phone")
+    setPhone("")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -214,68 +172,40 @@ export default function VendorRegister() {
             <p className="text-gray-600">Start sourcing quality raw materials at wholesale prices</p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Store className="w-5 h-5 text-orange-500" />
-                <span>
-                  {step === "phone" && "Phone Verification"}
-                  {step === "otp" && "Enter OTP"}
-                  {step === "details" && "Business Information"}
-                </span>
-              </CardTitle>
-              <CardDescription>
-                {step === "phone" && "We'll send you a verification code"}
-                {step === "otp" && `Code sent to ${phone}`}
-                {step === "details" && "Tell us about your street food business"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {step === "phone" && (
-                <form onSubmit={handleSendOTP} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Send OTP
-                  </Button>
-                </form>
-              )}
+          {step === "phone" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Store className="w-5 h-5 text-orange-500" />
+                  <span>Mobile Verification</span>
+                </CardTitle>
+                <CardDescription>Enter your mobile number to get started</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PhoneInput onOTPSent={handleOTPSent} />
+              </CardContent>
+            </Card>
+          )}
 
-              {step === "otp" && (
-                <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="otp">Enter OTP *</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      placeholder="123456"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      maxLength={6}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Verify OTP
-                  </Button>
-                  <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("phone")}>
-                    Change Phone Number
-                  </Button>
-                </form>
-              )}
+          {step === "otp" && (
+            <MobileOTPVerification
+              phone={phone}
+              onVerificationSuccess={handleVerificationSuccess}
+              onPhoneChange={handlePhoneChange}
+              defaultMethod={verificationMethod}
+            />
+          )}
 
-              {step === "details" && (
+          {step === "details" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Store className="w-5 h-5 text-orange-500" />
+                  <span>Business Information</span>
+                </CardTitle>
+                <CardDescription>Tell us about your street food business</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -430,18 +360,9 @@ export default function VendorRegister() {
                     Create Vendor Account
                   </Button>
                 </form>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="text-center mt-6">
-            <p className="text-gray-600">
-              Already have an account?{" "}
-              <Link href="/vendor/login" className="text-orange-500 hover:underline font-medium">
-                Sign in here
-              </Link>
-            </p>
-          </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -8,7 +8,8 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "VendorConnect - B2B Marketplace for Street Food Vendors",
-  description: "Connect street food vendors with trusted suppliers for quality raw materials at wholesale prices",
+  description:
+    "Connect street food vendors with trusted suppliers across India. Find quality ingredients, bulk pricing, and reliable supply chains.",
     generator: 'v0.dev'
 }
 

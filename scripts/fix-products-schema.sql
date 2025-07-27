@@ -1,33 +1,10 @@
--- Fix products table schema to match our interface
-ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
-ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
-ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- Add missing columns to products table
+ALTER TABLE products 
+ADD COLUMN IF NOT EXISTS image_url TEXT,
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
--- Ensure all required columns exist with proper defaults
-ALTER TABLE products ALTER COLUMN created_at SET DEFAULT NOW();
-ALTER TABLE products ALTER COLUMN updated_at SET DEFAULT NOW();
-
--- Update existing records to have timestamps if they don't
-UPDATE products SET created_at = NOW() WHERE created_at IS NULL;
-UPDATE products SET updated_at = NOW() WHERE updated_at IS NULL;
-
--- Add some sample image URLs for existing products
-UPDATE products SET image_url = CASE 
-  WHEN category = 'Vegetables' THEN '/placeholder.svg?height=200&width=200&text=Fresh+Vegetables'
-  WHEN category = 'Fruits' THEN '/placeholder.svg?height=200&width=200&text=Fresh+Fruits'
-  WHEN category = 'Grains & Cereals' THEN '/placeholder.svg?height=200&width=200&text=Quality+Grains'
-  WHEN category = 'Spices & Condiments' THEN '/placeholder.svg?height=200&width=200&text=Premium+Spices'
-  WHEN category = 'Dairy Products' THEN '/placeholder.svg?height=200&width=200&text=Fresh+Dairy'
-  WHEN category = 'Oils & Fats' THEN '/placeholder.svg?height=200&width=200&text=Pure+Oils'
-  WHEN category = 'Pulses & Legumes' THEN '/placeholder.svg?height=200&width=200&text=Quality+Pulses'
-  WHEN category = 'Meat & Poultry' THEN '/placeholder.svg?height=200&width=200&text=Fresh+Meat'
-  WHEN category = 'Seafood' THEN '/placeholder.svg?height=200&width=200&text=Fresh+Seafood'
-  WHEN category = 'Beverages' THEN '/placeholder.svg?height=200&width=200&text=Quality+Beverages'
-  ELSE '/placeholder.svg?height=200&width=200&text=' || name
-END
-WHERE image_url IS NULL;
-
--- Create trigger to automatically update updated_at timestamp
+-- Create function to update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -36,8 +13,26 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Create trigger for products table
 DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 CREATE TRIGGER update_products_updated_at
     BEFORE UPDATE ON products
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Update existing products with sample image URLs based on category
+UPDATE products SET image_url = CASE 
+    WHEN category = 'vegetables' THEN '/placeholder.svg?height=200&width=200'
+    WHEN category = 'spices' THEN '/placeholder.svg?height=200&width=200'
+    WHEN category = 'grains' THEN '/placeholder.svg?height=200&width=200'
+    WHEN category = 'dairy' THEN '/placeholder.svg?height=200&width=200'
+    WHEN category = 'meat' THEN '/placeholder.svg?height=200&width=200'
+    WHEN category = 'oils' THEN '/placeholder.svg?height=200&width=200'
+    ELSE '/placeholder.svg?height=200&width=200'
+END
+WHERE image_url IS NULL;
+
+-- Ensure proper indexes exist
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_supplier_id ON products(supplier_id);

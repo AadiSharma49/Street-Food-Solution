@@ -10,21 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Navbar } from "@/components/navbar"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/lib/supabase"
-import {
-  Search,
-  Filter,
-  Star,
-  MapPin,
-  Phone,
-  Mail,
-  ArrowRight,
-  Loader2,
-  ShoppingCart,
-  Users,
-  TrendingUp,
-  Shield,
-  Eye,
-} from "lucide-react"
+import { Search, Filter, Star, MapPin, Phone, Mail, ArrowRight, Loader2 } from "lucide-react"
 
 interface Product {
   id: string
@@ -73,19 +59,12 @@ export default function HomePage() {
     { value: "Beverages", label: "Beverages" },
   ]
 
-  const stats = [
-    { icon: Users, label: "Active Vendors", value: "2,500+" },
-    { icon: ShoppingCart, label: "Verified Suppliers", value: "850+" },
-    { icon: TrendingUp, label: "Orders Completed", value: "15,000+" },
-    { icon: Shield, label: "Quality Assured", value: "98%" },
-  ]
-
   const fetchFeaturedProducts = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Use a safer query that matches the actual database schema
+      // Build a safer query that handles missing columns
       const { data, error } = await supabase
         .from("products")
         .select(`
@@ -112,19 +91,13 @@ export default function HomePage() {
         .order("name", { ascending: true })
 
       if (error) {
-        console.error("Database error:", error)
-        // Use sample data if database query fails
-        setProducts(getSampleProducts())
-        return
-      }
-
-      if (!data || data.length === 0) {
-        setProducts(getSampleProducts())
+        console.error("Error fetching products:", error)
+        setError("Failed to load products. Please try again later.")
         return
       }
 
       // Process the data to handle missing fields
-      const processedProducts = data.map((product) => ({
+      const processedProducts = (data || []).map((product) => ({
         ...product,
         image_url: getDefaultImage(product.category),
         suppliers: product.suppliers
@@ -143,191 +116,10 @@ export default function HomePage() {
       setProducts(processedProducts)
     } catch (error) {
       console.error("Error fetching products:", error)
-      setProducts(getSampleProducts())
+      setError("Failed to load products. Please try again later.")
     } finally {
       setLoading(false)
     }
-  }
-
-  const getSampleProducts = (): Product[] => {
-    return [
-      {
-        id: "1",
-        name: "Fresh Tomatoes",
-        description: "Premium quality fresh tomatoes, perfect for street food preparations",
-        price: 45,
-        unit: "kg",
-        category: "Vegetables",
-        image_url: "/placeholder.svg?height=200&width=200&text=Fresh+Tomatoes",
-        supplier_id: "1",
-        suppliers: {
-          id: "1",
-          owner_name: "Mumbai Fresh Mart",
-          business_name: "Mumbai Fresh Mart",
-          city: "Mumbai",
-          state: "Maharashtra",
-          location: "Mumbai, Maharashtra",
-          phone: "+91 98765 43210",
-          email: "contact@mumbaimart.com",
-          rating: 4.8,
-          verified: true,
-        },
-      },
-      {
-        id: "2",
-        name: "Basmati Rice",
-        description: "Premium long grain basmati rice, ideal for biryanis and pulao",
-        price: 120,
-        unit: "kg",
-        category: "Grains & Cereals",
-        image_url: "/placeholder.svg?height=200&width=200&text=Basmati+Rice",
-        supplier_id: "2",
-        suppliers: {
-          id: "2",
-          owner_name: "Delhi Grain House",
-          business_name: "Delhi Grain House",
-          city: "Delhi",
-          state: "NCR",
-          location: "Delhi, NCR",
-          phone: "+91 98765 43211",
-          email: "orders@delhigrain.com",
-          rating: 4.7,
-          verified: true,
-        },
-      },
-      {
-        id: "3",
-        name: "Red Chili Powder",
-        description: "Authentic red chili powder with perfect heat and color",
-        price: 180,
-        unit: "kg",
-        category: "Spices & Condiments",
-        image_url: "/placeholder.svg?height=200&width=200&text=Red+Chili+Powder",
-        supplier_id: "3",
-        suppliers: {
-          id: "3",
-          owner_name: "Rajasthan Spice Co.",
-          business_name: "Rajasthan Spice Co.",
-          city: "Jodhpur",
-          state: "Rajasthan",
-          location: "Jodhpur, Rajasthan",
-          phone: "+91 98765 43212",
-          email: "spices@rajasthanspice.com",
-          rating: 4.9,
-          verified: true,
-        },
-      },
-      {
-        id: "4",
-        name: "Fresh Paneer",
-        description: "Daily fresh paneer made from pure milk, perfect for curries",
-        price: 280,
-        unit: "kg",
-        category: "Dairy Products",
-        image_url: "/placeholder.svg?height=200&width=200&text=Fresh+Paneer",
-        supplier_id: "4",
-        suppliers: {
-          id: "4",
-          owner_name: "Punjab Dairy Farm",
-          business_name: "Punjab Dairy Farm",
-          city: "Amritsar",
-          state: "Punjab",
-          location: "Amritsar, Punjab",
-          phone: "+91 98765 43213",
-          email: "dairy@punjabfarm.com",
-          rating: 4.6,
-          verified: true,
-        },
-      },
-      {
-        id: "5",
-        name: "Cooking Oil",
-        description: "Premium refined cooking oil for all your frying needs",
-        price: 140,
-        unit: "liter",
-        category: "Oils & Fats",
-        image_url: "/placeholder.svg?height=200&width=200&text=Cooking+Oil",
-        supplier_id: "5",
-        suppliers: {
-          id: "5",
-          owner_name: "Gujarat Oil Mills",
-          business_name: "Gujarat Oil Mills",
-          city: "Ahmedabad",
-          state: "Gujarat",
-          location: "Ahmedabad, Gujarat",
-          phone: "+91 98765 43214",
-          email: "oil@gujaratmills.com",
-          rating: 4.5,
-          verified: true,
-        },
-      },
-      {
-        id: "6",
-        name: "Green Coriander",
-        description: "Fresh green coriander leaves for garnishing and flavor",
-        price: 25,
-        unit: "bunch",
-        category: "Vegetables",
-        image_url: "/placeholder.svg?height=200&width=200&text=Green+Coriander",
-        supplier_id: "1",
-        suppliers: {
-          id: "1",
-          owner_name: "Mumbai Fresh Mart",
-          business_name: "Mumbai Fresh Mart",
-          city: "Mumbai",
-          state: "Maharashtra",
-          location: "Mumbai, Maharashtra",
-          phone: "+91 98765 43210",
-          email: "contact@mumbaimart.com",
-          rating: 4.8,
-          verified: true,
-        },
-      },
-      {
-        id: "7",
-        name: "Wheat Flour",
-        description: "Fine quality wheat flour for rotis, naans and bread",
-        price: 35,
-        unit: "kg",
-        category: "Grains & Cereals",
-        image_url: "/placeholder.svg?height=200&width=200&text=Wheat+Flour",
-        supplier_id: "2",
-        suppliers: {
-          id: "2",
-          owner_name: "Delhi Grain House",
-          business_name: "Delhi Grain House",
-          city: "Delhi",
-          state: "NCR",
-          location: "Delhi, NCR",
-          phone: "+91 98765 43211",
-          email: "orders@delhigrain.com",
-          rating: 4.7,
-          verified: true,
-        },
-      },
-      {
-        id: "8",
-        name: "Garam Masala",
-        description: "Aromatic blend of traditional Indian spices",
-        price: 320,
-        unit: "kg",
-        category: "Spices & Condiments",
-        image_url: "/placeholder.svg?height=200&width=200&text=Garam+Masala",
-        supplier_id: "3",
-        suppliers: {
-          id: "3",
-          owner_name: "Rajasthan Spice Co.",
-          business_name: "Rajasthan Spice Co.",
-          city: "Jodhpur",
-          state: "Rajasthan",
-          location: "Jodhpur, Rajasthan",
-          phone: "+91 98765 43212",
-          email: "spices@rajasthanspice.com",
-          rating: 4.9,
-          verified: true,
-        },
-      },
-    ]
   }
 
   const getDefaultImage = (category: string) => {
@@ -368,18 +160,14 @@ export default function HomePage() {
       <section className="bg-gradient-to-r from-orange-500 to-red-600 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Connecting Street Food Vendors with
-              <span className="block text-yellow-300">Trusted Suppliers</span>
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-              End the struggle of finding quality raw materials. Join India's largest B2B marketplace for street food
-              vendors and access verified suppliers, bulk pricing, and quality assurance.
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">Connect. Trade. Grow.</h1>
+            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+              India's premier B2B marketplace connecting street food vendors with trusted suppliers
             </p>
             {!user && (
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/vendor/register">
-                  <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 px-8 py-3">
+                  <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100">
                     Join as Vendor
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
@@ -388,7 +176,7 @@ export default function HomePage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-orange-600 bg-transparent px-8 py-3"
+                    className="border-white text-white hover:bg-white hover:text-orange-600 bg-transparent"
                   >
                     Join as Supplier
                   </Button>
@@ -399,27 +187,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
-                    <stat.icon className="w-8 h-8 text-orange-500" />
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-                <div className="text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Search and Filter Section */}
-      <section className="py-8 bg-gray-100 border-y">
+      <section className="py-8 bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1">
@@ -428,13 +197,13 @@ export default function HomePage() {
                 placeholder="Search products, suppliers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white"
+                className="pl-10"
               />
             </div>
             <div className="flex items-center gap-2">
               <Filter className="w-5 h-5 text-gray-400" />
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48 bg-white">
+                <SelectTrigger className="w-48">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -450,13 +219,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products Section */}
-      <section className="py-16">
+      {/* Products Section */}
+      <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products Available</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover the variety of quality ingredients available from our verified suppliers across India
+              Discover quality ingredients from verified suppliers across India
             </p>
           </div>
 
@@ -495,33 +264,29 @@ export default function HomePage() {
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
-                <Search className="w-16 h-16 mx-auto" />
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2m0 0V9a2 2 0 012-2h2m0 0V6a2 2 0 012-2h2.586a1 1 0 01.707.293l2.414 2.414A1 1 0 0016 7.414V9"
+                  />
+                </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-600 mb-4">Try adjusting your search or filter criteria</p>
-              <Link href="/vendor/login">
-                <Button className="bg-orange-500 hover:bg-orange-600">Login to Browse All Products</Button>
-              </Link>
+              <p className="text-gray-600">Try adjusting your search or filter criteria</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.slice(0, 8).map((product) => (
-                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
+              {filteredProducts.map((product) => (
+                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="relative">
                     <img
                       src={product.image_url || getDefaultImage(product.category)}
                       alt={product.name}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-48 object-cover"
                     />
-                    <Badge className="absolute top-2 left-2 bg-orange-500 text-white">{product.category}</Badge>
-                    {!user && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="text-white text-center">
-                          <Eye className="w-8 h-8 mx-auto mb-2" />
-                          <p className="text-sm">Login to view details</p>
-                        </div>
-                      </div>
-                    )}
+                    <Badge className="absolute top-2 left-2 bg-orange-500">{product.category}</Badge>
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-lg mb-2 line-clamp-1">{product.name}</h3>
@@ -529,50 +294,40 @@ export default function HomePage() {
                       {product.description || "Quality product from verified supplier"}
                     </p>
 
-                    {/* Product availability indicator */}
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Available in:</span>
-                        <span className="text-sm font-medium text-green-600">{product.unit}</span>
+                    {user ? (
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-2xl font-bold text-green-600">₹{product.price}</span>
+                        <span className="text-sm text-gray-500">per {product.unit}</span>
                       </div>
-                      {user ? (
-                        <div className="mt-1">
-                          <span className="text-lg font-bold text-green-600">₹{product.price}</span>
-                          <span className="text-sm text-gray-500"> per {product.unit}</span>
+                    ) : (
+                      <div className="mb-3">
+                        <div className="bg-gray-100 rounded p-2 text-center">
+                          <p className="text-sm text-gray-600">Login to view prices</p>
                         </div>
-                      ) : (
-                        <div className="mt-1 bg-gray-100 rounded px-2 py-1">
-                          <p className="text-xs text-gray-600 text-center">Login to view pricing</p>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {product.suppliers && (
-                      <div className="border-t pt-3 mb-3">
+                      <div className="border-t pt-3">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-gray-700">{product.suppliers.business_name}</span>
+                          <span className="font-medium">{product.suppliers.business_name}</span>
                           <div className="flex items-center">
-                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                            <span className="ml-1 text-xs">{product.suppliers.rating}</span>
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="ml-1">{product.suppliers.rating}</span>
                           </div>
                         </div>
                         <div className="flex items-center text-xs text-gray-500 mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
                           {product.suppliers.location}
                         </div>
-                        {product.suppliers.verified && (
-                          <Badge variant="secondary" className="mt-1 text-xs">
-                            ✓ Verified Supplier
-                          </Badge>
-                        )}
                       </div>
                     )}
 
                     {user ? (
-                      <Button className="w-full bg-orange-500 hover:bg-orange-600">Contact Supplier</Button>
+                      <Button className="w-full mt-3 bg-orange-500 hover:bg-orange-600">Contact Supplier</Button>
                     ) : (
                       <Link href="/vendor/login">
-                        <Button className="w-full bg-orange-500 hover:bg-orange-600">Login to Contact</Button>
+                        <Button className="w-full mt-3 bg-orange-500 hover:bg-orange-600">Login to Contact</Button>
                       </Link>
                     )}
                   </CardContent>
@@ -580,64 +335,6 @@ export default function HomePage() {
               ))}
             </div>
           )}
-
-          {/* View More Button */}
-          <div className="text-center mt-12">
-            {user ? (
-              <Link href="/vendor/products">
-                <Button size="lg" className="bg-orange-500 hover:bg-orange-600 px-8">
-                  Browse All Products
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/vendor/login">
-                <Button size="lg" className="bg-orange-500 hover:bg-orange-600 px-8">
-                  Login to Browse All Products
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Why Street Food Vendors Choose VendorConnect
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🛒</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Bulk Ordering Power</h3>
-              <p className="text-gray-600">Join group orders to get wholesale prices and reduce costs by up to 30%</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">✅</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Quality Verification</h3>
-              <p className="text-gray-600">All suppliers are verified with quality certifications and regular audits</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">⭐</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Trust & Reviews</h3>
-              <p className="text-gray-600">Transparent rating system with real vendor reviews and supplier ratings</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📊</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Smart Inventory</h3>
-              <p className="text-gray-600">Track your stock levels and get alerts when it's time to reorder</p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -651,7 +348,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/vendor/register">
-                <Button size="lg" className="bg-orange-500 hover:bg-orange-600 px-8">
+                <Button size="lg" className="bg-orange-500 hover:bg-orange-600">
                   Start as Vendor
                 </Button>
               </Link>
@@ -659,7 +356,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-gray-900 bg-transparent px-8"
+                  className="border-white text-white hover:bg-white hover:text-gray-900 bg-transparent"
                 >
                   Start as Supplier
                 </Button>

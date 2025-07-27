@@ -28,14 +28,43 @@ ADD COLUMN IF NOT EXISTS image_url TEXT,
 ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
 
--- Add some sample featured products
-INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) VALUES
-('Fresh Tomatoes', 'Premium quality red tomatoes, perfect for street food preparations', 'Vegetables', 45, 'kg', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Fresh+Tomatoes'),
-('Basmati Rice', 'Long grain aromatic basmati rice, ideal for biryanis and pulao', 'Grains & Cereals', 120, 'kg', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Basmati+Rice'),
-('Red Chili Powder', 'Pure and spicy red chili powder for authentic Indian flavors', 'Spices & Condiments', 180, 'kg', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Chili+Powder'),
-('Fresh Paneer', 'Soft and fresh cottage cheese, made daily', 'Dairy Products', 280, 'kg', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Fresh+Paneer'),
-('Cooking Oil', 'Refined sunflower oil for healthy cooking', 'Oils & Fats', 140, 'liter', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Cooking+Oil'),
-('Green Coriander', 'Fresh green coriander leaves for garnishing', 'Vegetables', 25, 'bunch', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Green+Coriander'),
-('Wheat Flour', 'Fine quality wheat flour for rotis and parathas', 'Grains & Cereals', 35, 'kg', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Wheat+Flour'),
-('Garam Masala', 'Aromatic blend of traditional Indian spices', 'Spices & Condiments', 320, 'kg', (SELECT id FROM suppliers LIMIT 1), 'active', '/placeholder.svg?height=200&width=200&text=Garam+Masala')
-ON CONFLICT DO NOTHING;
+-- Add some sample featured products if they don't exist
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Fresh Tomatoes', 'Premium quality fresh tomatoes, perfect for street food preparations', 'Vegetables', 45, 'kg', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Fresh+Tomatoes'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Fresh Tomatoes');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Basmati Rice', 'Premium long grain basmati rice, ideal for biryanis and pulao', 'Grains & Cereals', 120, 'kg', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Basmati+Rice'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Basmati Rice');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Red Chili Powder', 'Authentic red chili powder with perfect heat and color', 'Spices & Condiments', 180, 'kg', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Red+Chili+Powder'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Red Chili Powder');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Fresh Paneer', 'Daily fresh paneer made from pure milk, perfect for curries', 'Dairy Products', 280, 'kg', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Fresh+Paneer'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Fresh Paneer');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Cooking Oil', 'Premium refined cooking oil for all your frying needs', 'Oils & Fats', 140, 'liter', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Cooking+Oil'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Cooking Oil');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Green Coriander', 'Fresh green coriander leaves for garnishing and flavor', 'Vegetables', 25, 'bunch', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Green+Coriander'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Green Coriander');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Wheat Flour', 'Fine quality wheat flour for rotis, naans and bread', 'Grains & Cereals', 35, 'kg', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Wheat+Flour'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Wheat Flour');
+
+INSERT INTO products (name, description, category, price, unit, supplier_id, status, image_url) 
+SELECT 'Garam Masala', 'Aromatic blend of traditional Indian spices', 'Spices & Condiments', 320, 'kg', s.id, 'active', '/placeholder.svg?height=200&width=200&text=Garam+Masala'
+FROM suppliers s LIMIT 1
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = 'Garam Masala');
